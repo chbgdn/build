@@ -1,9 +1,9 @@
 diff --git a/arch/arm/boot/dts/rk322x-box.dts b/arch/arm/boot/dts/rk322x-box.dts
 new file mode 100644
-index 000000000..556539618
+index 000000000..ab10b4f36
 --- /dev/null
 +++ b/arch/arm/boot/dts/rk322x-box.dts
-@@ -0,0 +1,466 @@
+@@ -0,0 +1,474 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 +
 +/dts-v1/;
@@ -271,6 +271,14 @@ index 000000000..556539618
 +
 +&gpu {
 +	mali-supply = <&vdd_log>;
++};
++
++&iep {
++	status = "okay";
++};
++
++&iep_mmu {
++	status = "okay";
 +};
 +
 +&pwm1 {

@@ -9,13 +9,13 @@ Subject: [PATCH 3/5] rk3228/rk3328: extend rockchip dfi driver
  2 files changed, 557 insertions(+), 48 deletions(-)
 
 diff --git a/arch/arm/boot/dts/rk322x.dtsi b/arch/arm/boot/dts/rk322x.dtsi
-index 3845abe92..13e0b42e9 100644
+index ad98fcf37..7e06acc31 100644
 --- a/arch/arm/boot/dts/rk322x.dtsi
 +++ b/arch/arm/boot/dts/rk322x.dtsi
-@@ -100,6 +100,13 @@ opp-1200000000 {
+@@ -97,6 +97,13 @@ opp-1200000000 {
  		};
  	};
-
+ 
 +	dfi: dfi@11210000 {
 +		reg = <0x11210000 0x400>;
 +		compatible = "rockchip,rk3228-dfi";
@@ -33,7 +33,7 @@ index 9a88faaf8..01fb84b99 100644
 @@ -18,25 +18,68 @@
  #include <linux/list.h>
  #include <linux/of.h>
-
+ 
 -#include <soc/rockchip/rk3399_grf.h>
 -
 -#define RK3399_DMC_NUM_CH	2
@@ -90,12 +90,12 @@ index 9a88faaf8..01fb84b99 100644
 +#define SOFTWARE_EN			(0x10001 << 1)
 +#define SOFTWARE_DIS			(0x10000 << 1)
 +#define TIME_CNT_EN			(0x10001 << 0)
-
+ 
  #define DDRMON_CH0_COUNT_NUM		0x28
  #define DDRMON_CH0_DFI_ACCESS_NUM	0x2c
  #define DDRMON_CH1_COUNT_NUM		0x3c
  #define DDRMON_CH1_DFI_ACCESS_NUM	0x40
-
+ 
 +/* pmu grf */
 +#define PMUGRF_OS_REG2			0x308
 +
@@ -355,7 +355,7 @@ index 9a88faaf8..01fb84b99 100644
 +	.get_event = rk3368_dfi_get_event,
 +	.set_event = rk3368_dfi_set_event,
  };
-
+ 
  static void rockchip_dfi_start_hardware_counter(struct devfreq_event_dev *edev)
  {
  	struct rockchip_dfi *info = devfreq_event_get_drvdata(edev);
@@ -367,10 +367,10 @@ index 9a88faaf8..01fb84b99 100644
 -	regmap_read(info->regmap_pmu, RK3399_PMUGRF_OS_REG2, &val);
 -	ddr_type = (val >> RK3399_PMUGRF_DDRTYPE_SHIFT) &
 -		    RK3399_PMUGRF_DDRTYPE_MASK;
-
+ 
  	/* clear DDRMON_CTRL setting */
  	writel_relaxed(CLR_DDRMON_CTRL, dfi_regs + DDRMON_CTRL);
-
+ 
  	/* set ddr type to dfi */
 -	if (ddr_type == RK3399_PMUGRF_DDRTYPE_LPDDR3)
 -		writel_relaxed(LPDDR3_EN, dfi_regs + DDRMON_CTRL);
@@ -381,12 +381,12 @@ index 9a88faaf8..01fb84b99 100644
  		writel_relaxed(LPDDR4_EN, dfi_regs + DDRMON_CTRL);
 +	else if (info->dram_type == DDR4)
 +		writel_relaxed(DDR4_EN, dfi_regs + DDRMON_CTRL);
-
+ 
  	/* enable count, use software mode */
  	writel_relaxed(SOFTWARE_EN, dfi_regs + DDRMON_CTRL);
 @@ -100,12 +371,22 @@ static int rockchip_dfi_get_busier_ch(struct devfreq_event_dev *edev)
  	rockchip_dfi_stop_hardware_counter(edev);
-
+ 
  	/* Find out which channel is busier */
 -	for (i = 0; i < RK3399_DMC_NUM_CH; i++) {
 -		info->ch_usage[i].access = readl_relaxed(dfi_regs +
@@ -412,19 +412,19 @@ index 9a88faaf8..01fb84b99 100644
  			busier_ch = i;
  			max = tmp;
 @@ -118,10 +399,14 @@ static int rockchip_dfi_get_busier_ch(struct devfreq_event_dev *edev)
-
+ 
  static int rockchip_dfi_disable(struct devfreq_event_dev *edev)
  {
 +	struct device *dev = &edev->dev;
  	struct rockchip_dfi *info = devfreq_event_get_drvdata(edev);
-
+ 
  	rockchip_dfi_stop_hardware_counter(edev);
 -	clk_disable_unprepare(info->clk);
 +	if (info->clk)
 +		clk_disable_unprepare(info->clk);
 +
 +	dev_notice(dev,"Rockchip DFI interface disabled\n");
-
+ 
  	return 0;
  }
 @@ -129,20 +414,28 @@ static int rockchip_dfi_disable(struct devfreq_event_dev *edev)
@@ -433,7 +433,7 @@ index 9a88faaf8..01fb84b99 100644
  	struct rockchip_dfi *info = devfreq_event_get_drvdata(edev);
 +	struct device *dev = &edev->dev;
  	int ret;
-
+ 
 -	ret = clk_prepare_enable(info->clk);
 -	if (ret) {
 -		dev_err(&edev->dev, "failed to enable dfi clk: %d\n", ret);
@@ -446,36 +446,36 @@ index 9a88faaf8..01fb84b99 100644
 +			return ret;
 +		}
  	}
-
+ 
  	rockchip_dfi_start_hardware_counter(edev);
 +
 +	dev_notice(dev,"Rockchip DFI interface enabled\n");
 +
  	return 0;
  }
-
+ 
  static int rockchip_dfi_set_event(struct devfreq_event_dev *edev)
  {
 +
  	return 0;
  }
-
+ 
 @@ -151,8 +444,11 @@ static int rockchip_dfi_get_event(struct devfreq_event_dev *edev,
  {
  	struct rockchip_dfi *info = devfreq_event_get_drvdata(edev);
  	int busier_ch;
 +	unsigned long flags;
-
+ 
 +	local_irq_save(flags);
  	busier_ch = rockchip_dfi_get_busier_ch(edev);
 +	local_irq_restore(flags);
-
+ 
  	edata->load_count = info->ch_usage[busier_ch].access;
  	edata->total_count = info->ch_usage[busier_ch].total;
 @@ -167,22 +463,151 @@ static const struct devfreq_event_ops rockchip_dfi_ops = {
  	.set_event = rockchip_dfi_set_event,
  };
-
+ 
 -static const struct of_device_id rockchip_dfi_id_match[] = {
 -	{ .compatible = "rockchip,rk3399-dfi" },
 -	{ },
@@ -488,7 +488,7 @@ index 9a88faaf8..01fb84b99 100644
 +	struct device_node *np = pdev->dev.of_node, *node;
 +	struct resource *res;
 +	u32 val;
-
+ 
 -static int rockchip_dfi_probe(struct platform_device *pdev)
 +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 +	data->regs = devm_ioremap_resource(&pdev->dev, res);
@@ -573,7 +573,7 @@ index 9a88faaf8..01fb84b99 100644
 +{
  	struct device_node *np = pdev->dev.of_node, *node;
 +	u32 val;
-
+ 
 -	data = devm_kzalloc(dev, sizeof(struct rockchip_dfi), GFP_KERNEL);
 -	if (!data)
 -		return -ENOMEM;
@@ -632,7 +632,7 @@ index 9a88faaf8..01fb84b99 100644
 +	struct device *dev = &pdev->dev;
 +	struct device_node *np = pdev->dev.of_node, *node;
 +	u32 val;
-
+ 
  	data->regs = devm_platform_ioremap_resource(pdev, 0);
  	if (IS_ERR(data->regs))
 @@ -202,21 +627,98 @@ static int rockchip_dfi_probe(struct platform_device *pdev)
@@ -706,11 +706,11 @@ index 9a88faaf8..01fb84b99 100644
 +	data = devm_kzalloc(dev, sizeof(struct rockchip_dfi), GFP_KERNEL);
 +	if (!data)
 +		return -ENOMEM;
-
+ 
  	desc = devm_kzalloc(dev, sizeof(*desc), GFP_KERNEL);
  	if (!desc)
  		return -ENOMEM;
-
+ 
 -	desc->ops = &rockchip_dfi_ops;
 +	match = of_match_node(rockchip_dfi_id_match, pdev->dev.of_node);
 +	if (match) {
@@ -729,7 +729,7 @@ index 9a88faaf8..01fb84b99 100644
  	desc->name = np->name;
  	data->desc = desc;
 +	data->dev = dev;
-
+ 
 -	data->edev = devm_devfreq_event_add_edev(&pdev->dev, desc);
 +	data->edev = devm_devfreq_event_add_edev(dev, desc);
  	if (IS_ERR(data->edev)) {
@@ -738,6 +738,8 @@ index 9a88faaf8..01fb84b99 100644
 +		dev_err(dev, "failed to add devfreq-event device\n");
  		return PTR_ERR(data->edev);
  	}
-
---
+ 
+-- 
 2.25.1
+
+

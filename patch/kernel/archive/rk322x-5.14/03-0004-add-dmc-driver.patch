@@ -18,26 +18,25 @@ Subject: [PATCH] rk3228/rk3328: add dmc driver
  create mode 100644 include/dt-bindings/memory/rockchip,rk322x.h
 
 diff --git a/arch/arm/boot/dts/rk322x.dtsi b/arch/arm/boot/dts/rk322x.dtsi
-index 13e0b42e9..90002b43d 100644
+index 88e33eb11..22da2e3cd 100644
 --- a/arch/arm/boot/dts/rk322x.dtsi
 +++ b/arch/arm/boot/dts/rk322x.dtsi
-@@ -7,6 +7,9 @@
+@@ -7,6 +7,8 @@
  #include <dt-bindings/clock/rk3228-cru.h>
  #include <dt-bindings/thermal/thermal.h>
  #include <dt-bindings/power/rk3228-power.h>
 +#include <dt-bindings/clock/rockchip-ddr.h>
 +#include <dt-bindings/memory/rockchip,rk322x.h>
-+
-
+ 
  / {
  	#address-cells = <1>;
-@@ -107,6 +110,68 @@ dfi: dfi@11210000 {
+@@ -106,6 +106,68 @@ dfi: dfi@11210000 {
  		status = "okay";
  	};
-
+ 
 +	dmc: dmc@11200000 {
 +		compatible = "rockchip,rk3228-dmc", "rockchip,rk322x-dram";
-+               reg = <0x11200000 0x400>;
++		reg = <0x11200000 0x400>;
 +		clocks = <&cru SCLK_DDRCLK>;
 +		clock-names = "ddr_sclk";
 +		operating-points-v2 = <&dmc_opp_table>;
@@ -45,7 +44,7 @@ index 13e0b42e9..90002b43d 100644
 +		rockchip,grf = <&grf>;
 +		devfreq-events = <&dfi>;
 +		upthreshold = <15>;
-+                downdifferential = <10>;
++		downdifferential = <10>;
 +		#cooling-cells = <2>;
 +		status = "disabled";
 +	};
@@ -100,27 +99,27 @@ index 13e0b42e9..90002b43d 100644
  	arm-pmu {
  		compatible = "arm,cortex-a7-pmu";
  		interrupts = <GIC_SPI 76 IRQ_TYPE_LEVEL_HIGH>,
-@@ -669,17 +734,17 @@ gpu_opp_table: opp-table2 {
-
+@@ -673,17 +736,17 @@ gpu_opp_table: opp-table2 {
+ 
  		opp-200000000 {
  			opp-hz = /bits/ 64 <200000000>;
 -			opp-microvolt = <1050000>;
 +			opp-microvolt = <1050000 1000000 1200000>;
  		};
-
+ 
  		opp-300000000 {
  			opp-hz = /bits/ 64 <300000000>;
 -			opp-microvolt = <1050000>;
 +			opp-microvolt = <1050000 1000000 1200000>;
  		};
-
+ 
  		opp-500000000 {
  			opp-hz = /bits/ 64 <500000000>;
 -			opp-microvolt = <1150000>;
 +			opp-microvolt = <1150000 1000000 1200000>;
  		};
  	};
-
+ 
 diff --git a/drivers/devfreq/Kconfig b/drivers/devfreq/Kconfig
 index 37dc40d1f..5f864a855 100644
 --- a/drivers/devfreq/Kconfig
@@ -128,7 +127,7 @@ index 37dc40d1f..5f864a855 100644
 @@ -131,6 +131,30 @@ config ARM_TEGRA20_DEVFREQ
  	  It reads Memory Controller counters and adjusts the operating
  	  frequencies and voltages with OPP support.
-
+ 
 +config ARM_RK3328_DMC_DEVFREQ
 +	tristate "ARM RK3328 DMC DEVFREQ Driver"
 +	depends on ARCH_ROCKCHIP
@@ -168,7 +167,7 @@ index 3ca1ad0ec..7d6d7be25 100644
 +obj-$(CONFIG_ARM_RK3228_DMC_DEVFREQ)	+= rk3228_dmc.o
  obj-$(CONFIG_ARM_TEGRA_DEVFREQ)		+= tegra30-devfreq.o
  obj-$(CONFIG_ARM_TEGRA20_DEVFREQ)	+= tegra20-devfreq.o
-
+ 
 diff --git a/drivers/devfreq/rk3328_dmc.c b/drivers/devfreq/rk3328_dmc.c
 new file mode 100644
 index 000000000..5dcea91cf
@@ -1706,11 +1705,11 @@ index 000000000..3a34cb2b5
 +	u32 tras;
 +	u32 trp;
 +	u32 trcd;
-+
++	
 +	u32 mcfg;
 +	u32 reg_ddr_type1;
 +	u32 reg_ddr_type2;
-+
++	
 +	u32 dram_type;
 +	u32 cr;
 +
@@ -1754,8 +1753,8 @@ index 000000000..3a34cb2b5
 +			break;
 +	}
 +
-+	dev_info(rdev->dev,
-+		"memory type %s, timings (tCL, tRCD, tRP, tRAS): CL%d-%d-%d-%d command rate: %s (mcfg register: 0x%x)\n",
++	dev_info(rdev->dev, 
++		"memory type %s, timings (tCL, tRCD, tRP, tRAS): CL%d-%d-%d-%d command rate: %s (mcfg register: 0x%x)\n", 
 +		dram_types[dram_type], tcl, trcd, trp, tras, cr_types[cr], mcfg);
 +
 +	return 0;
@@ -1931,6 +1930,7 @@ index 000000000..3a34cb2b5
 +MODULE_LICENSE("GPL v2");
 +MODULE_AUTHOR("Lin Huang <hl@rock-chips.com>");
 +MODULE_DESCRIPTION("RK3228 dmcfreq driver with devfreq framework");
---
+-- 
 2.25.1
+
 

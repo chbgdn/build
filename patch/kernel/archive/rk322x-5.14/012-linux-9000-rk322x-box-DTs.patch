@@ -1,9 +1,8 @@
-From 0a4705dcfadb06b21b05b92cdd23a7cf61b27d85 Mon Sep 17 00:00:00 2001
-From: Alex Bee <knaerzche@gmail.com>
-Date: Sun, 16 Aug 2020 23:03:12 +0200
-Subject: [PATCH] WIP: ARM: dts: add RK322x box device trees
+From 61d802c2e9a20880995d9dc77de2b2a4a5d59e58 Mon Sep 17 00:00:00 2001
+From: Paolo Sabatino <paolo.sabatino@gmail.com>
+Date: Thu, 9 Sep 2021 16:55:05 +0000
+Subject: [PATCH 4/4] 01-linux-9000-rk322x-box-DTs
 
-Signed-off-by: Alex Bee <knaerzche@gmail.com>
 ---
  arch/arm/boot/dts/Makefile                |   4 +
  arch/arm/boot/dts/rk3228a-box-h96mini.dts | 115 +++++++++
@@ -27,10 +26,10 @@ Signed-off-by: Alex Bee <knaerzche@gmail.com>
  create mode 100644 arch/arm/boot/dts/rk322x-box.dtsi
 
 diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index ce66ffd5a1bb..4841972313e8 100644
+index 863347b6b..1aa5b839f 100644
 --- a/arch/arm/boot/dts/Makefile
 +++ b/arch/arm/boot/dts/Makefile
-@@ -981,7 +981,11 @@ dtb-$(CONFIG_ARCH_ROCKCHIP) += \
+@@ -1008,7 +1008,11 @@ dtb-$(CONFIG_ARCH_ROCKCHIP) += \
  	rk3188-bqedison2qc.dtb \
  	rk3188-px3-evb.dtb \
  	rk3188-radxarock.dtb \
@@ -44,7 +43,7 @@ index ce66ffd5a1bb..4841972313e8 100644
  	rk3288-evb-act8846.dtb \
 diff --git a/arch/arm/boot/dts/rk3228a-box-h96mini.dts b/arch/arm/boot/dts/rk3228a-box-h96mini.dts
 new file mode 100644
-index 000000000000..1041b6737d40
+index 000000000..1041b6737
 --- /dev/null
 +++ b/arch/arm/boot/dts/rk3228a-box-h96mini.dts
 @@ -0,0 +1,115 @@
@@ -165,7 +164,7 @@ index 000000000000..1041b6737d40
 +};
 diff --git a/arch/arm/boot/dts/rk3228a-box.dts b/arch/arm/boot/dts/rk3228a-box.dts
 new file mode 100644
-index 000000000000..e68ef44b95c9
+index 000000000..e68ef44b9
 --- /dev/null
 +++ b/arch/arm/boot/dts/rk3228a-box.dts
 @@ -0,0 +1,47 @@
@@ -218,7 +217,7 @@ index 000000000000..e68ef44b95c9
 +};
 diff --git a/arch/arm/boot/dts/rk3228a-box.dtsi b/arch/arm/boot/dts/rk3228a-box.dtsi
 new file mode 100644
-index 000000000000..056945c6c9a7
+index 000000000..056945c6c
 --- /dev/null
 +++ b/arch/arm/boot/dts/rk3228a-box.dtsi
 @@ -0,0 +1,12 @@
@@ -236,7 +235,7 @@ index 000000000000..056945c6c9a7
 +};
 diff --git a/arch/arm/boot/dts/rk3229-box-a95xr1.dts b/arch/arm/boot/dts/rk3229-box-a95xr1.dts
 new file mode 100644
-index 000000000000..b3695fb0b255
+index 000000000..b3695fb0b
 --- /dev/null
 +++ b/arch/arm/boot/dts/rk3229-box-a95xr1.dts
 @@ -0,0 +1,57 @@
@@ -299,7 +298,7 @@ index 000000000000..b3695fb0b255
 +};
 diff --git a/arch/arm/boot/dts/rk3229-box.dts b/arch/arm/boot/dts/rk3229-box.dts
 new file mode 100644
-index 000000000000..b63e61cda257
+index 000000000..b63e61cda
 --- /dev/null
 +++ b/arch/arm/boot/dts/rk3229-box.dts
 @@ -0,0 +1,50 @@
@@ -355,7 +354,7 @@ index 000000000000..b63e61cda257
 +};
 diff --git a/arch/arm/boot/dts/rk3229-box.dtsi b/arch/arm/boot/dts/rk3229-box.dtsi
 new file mode 100644
-index 000000000000..4499b85351e0
+index 000000000..4499b8535
 --- /dev/null
 +++ b/arch/arm/boot/dts/rk3229-box.dtsi
 @@ -0,0 +1,13 @@
@@ -374,7 +373,7 @@ index 000000000000..4499b85351e0
 +};
 diff --git a/arch/arm/boot/dts/rk3229-cpu-opp.dtsi b/arch/arm/boot/dts/rk3229-cpu-opp.dtsi
 new file mode 100644
-index 000000000000..c1c7613bab11
+index 000000000..c1c7613ba
 --- /dev/null
 +++ b/arch/arm/boot/dts/rk3229-cpu-opp.dtsi
 @@ -0,0 +1,50 @@
@@ -430,7 +429,7 @@ index 000000000000..c1c7613bab11
 +};
 diff --git a/arch/arm/boot/dts/rk322x-box-dcdc.dtsi b/arch/arm/boot/dts/rk322x-box-dcdc.dtsi
 new file mode 100644
-index 000000000000..34273f3ff9ae
+index 000000000..34273f3ff
 --- /dev/null
 +++ b/arch/arm/boot/dts/rk322x-box-dcdc.dtsi
 @@ -0,0 +1,163 @@
@@ -599,7 +598,7 @@ index 000000000000..34273f3ff9ae
 +};
 diff --git a/arch/arm/boot/dts/rk322x-box.dtsi b/arch/arm/boot/dts/rk322x-box.dtsi
 new file mode 100644
-index 000000000000..ef5fa28d8ee9
+index 000000000..ef5fa28d8
 --- /dev/null
 +++ b/arch/arm/boot/dts/rk322x-box.dtsi
 @@ -0,0 +1,282 @@
@@ -885,3 +884,6 @@ index 000000000000..ef5fa28d8ee9
 +&wdt {
 +	status = "okay";
 +};
+-- 
+2.25.1
+
